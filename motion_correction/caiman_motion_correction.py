@@ -104,7 +104,7 @@ def piecewise_rigid_registration(fnames,
 
     Y = np.array(m_els.tolist())
     if highPassFilter:
-        Y = high_pass_filtering(Y.sigma)
+        Y = high_pass_filtering(Y, sigma)
 
     return Y
 

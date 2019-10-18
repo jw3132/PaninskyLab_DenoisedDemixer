@@ -27,5 +27,5 @@ def test_high_pass_filtering():
 
 
 if __name__ == '__main__':
-    # test_motion_correction()
-    test_high_pass_filtering()
+    test_motion_correction()
+    # test_high_pass_filtering()
