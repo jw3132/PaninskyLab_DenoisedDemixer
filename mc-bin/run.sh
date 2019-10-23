@@ -1,19 +1,28 @@
 #!/bin/sh
-# usage: run.sh bucket path filename
+# usage: run.sh bucketName fullPathToDataFolder
+#
+# bucketName, the name of the S3 bucket
+# fullPathToDataFoler, for each jobsubmission, all related data and jobsubmission
+#   file should be put in a new folder, never put two jobsubmission in one folder
+#
+# By default, each job submission includes a jobsubmit.json file, the jobsubmission json file.
+# This filename is jobsubmit.json and should be submitted at the end until all other datafiles have been successfully
+# submitted.
+
 
 # Define Constants
 TMPDIR=/home/ubuntu/tmp
-INDIR=$TMPDIR/input 
+#TMPDIR=/Users/jianwang/Downloads/tempdir
 LOGDIR=$TMPDIR/log
 OUTDIR=$TMPDIR/output
 
 # Make File Structure For Data & Results
-mkdir -p $INDIR
+mkdir -p $TMPDIR
 mkdir -p $LOGDIR
 mkdir -p $OUTDIR
 
 # Get Data & Config From Upload Bucket
-aws s3 sync s3://$1/$2/inputs $INDIR
+aws s3 sync s3://$1/$2/ $TMPDIR
 
 # Configure Anaconda For SSM (added by Miniconda3 4.5.12 installer)
 __conda_setup="$(CONDA_REPORT_ERRORS=false '/home/ubuntu/miniconda3/bin/conda' shell.bash hook 2> /dev/null)"
@@ -33,12 +42,13 @@ unset __conda_setup
 /home/ubuntu/bin/sync_dir.sh $LOGDIR s3://$1/$2/logs &
 
 # Activate Conda-Env & Run Python Script
-conda activate trefide
-echo " -- Output From Python Script -- " > $LOGDIR/pmd_out.txt	
-python /home/ubuntu/bin/compress.py $3 $INDIR $OUTDIR >> $LOGDIR/pmd_out.txt
+conda activate caiman
+echo " -- Output From Python Script -- " > $LOGDIR/motionCorrectionLog.txt
+#python /home/ubuntu/bin/compress.py $3 $INDIR $OUTDIR >> $LOGDIR/motionCorrectionLog.txt
+python /home/ubuntu/bin/caiman_motion_correction.py $TMPDIR $OUTDIR >> $LOGDIR/motionCorrectionLog.txt
 
 # Copy Logs & Results Back To S3 Subdirectory
-aws s3 sync $OUTDIR s3://$1/$2/results/
+aws s3 sync $OUTDIR s3://$1/$2/output/
 aws s3 sync $LOGDIR s3://$1/$2/logs/
 
 # Remove Temporary File Structure

@@ -1,0 +1,15 @@
+{
+  "files": ["datafile1.tiff", "datafile2.tiff", "datafile3.tiff"],
+  "parameters": {
+    "max_shifts": [6, 6],
+    "strides": [48, 48],
+    "overlaps": [24, 24],
+    "num_frames_split": 100,
+    "max_deviation_rigid": 3,
+    "pw_rigid": false,
+    "shifts_opencv": true,
+    "border_nan": "copy",
+    "highPassFilter": false,
+    "sigma": 70
+  }
+}
