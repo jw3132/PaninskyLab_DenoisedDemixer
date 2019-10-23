@@ -1,4 +1,6 @@
 
+import sys
+import json
 import numpy as np
 
 import scipy
@@ -58,7 +60,7 @@ def piecewise_rigid_registration(fnames,
                                  pw_rigid=False,
                                  shifts_opencv=True,
                                  border_nan='copy',
-                                 highPassFilter='False',
+                                 highPassFilter=False,
                                  sigma=7):
     '''Apply CaImAn piecewise rigid registration on raw imaging data
 
@@ -105,9 +107,72 @@ def piecewise_rigid_registration(fnames,
     Y = np.array(m_els.tolist())
     if highPassFilter:
         Y = high_pass_filtering(Y, sigma)
-
     return Y
 
+
+if __name__ == '__main__':
+    # perform 2 main works:
+    # 1. the first step is updating default parameters using parameters structure in
+    # jobsubmit.json file,
+    # 2. the second step is to loop through each data file in jobsubmit.json file,
+    # perform motion correction on each data file according to parameters input,
+    # save motion corrected data to output folder.
+
+    print("argv: ", sys.argv)
+    with open(sys.argv[1] + '/' + 'jobsubmit.json', 'r') as configFile:
+        inputJson = json.load(configFile)
+        print('inputJson: ', inputJson)
+
+    defaultParams = {'max_shifts': (6, 6),
+                      'strides': (48, 48),
+                      'overlaps': (24, 24),
+                      'num_frames_split': 100,
+                      'max_deviation_rigid': 3,
+                      'pw_rigid': False,
+                      'shifts_opencv': True,
+                      'border_nan': 'copy',
+                      'highPassFilter': False,
+                      'sigma': 7
+                      }
+    tupleKeys = ('max_shifts', 'strides', 'overlaps') # key that need to take tuple input
+
+    # update defaultParams if the input JSON file contains "parameters" field
+    if "parameters" in inputJson:
+        inputParams = inputJson['parameters']
+        print('params: ', inputParams)
+
+        for key in defaultParams:
+            if key in inputParams:
+                if key in tupleKeys:
+                    defaultParams[key] = tuple(inputParams[key])
+                else:
+                    defaultParams[key] = inputParams[key]
+        print('defaultParams:', defaultParams)
+
+    if "files" in inputJson:
+        files = inputJson["files"]
+        for file in files:
+            print(file)
+            # try block for each file
+            try:
+                YC = piecewise_rigid_registration(sys.argv[1] + '/' + file,
+                                                  max_shifts=defaultParams['max_shifts'],
+                                                  strides=defaultParams['strides'],
+                                                  overlaps=defaultParams['overlaps'],
+                                                  num_frames_split=defaultParams['num_frames_split'],
+                                                  max_deviation_rigid=defaultParams['max_deviation_rigid'],
+                                                  pw_rigid=defaultParams['pw_rigid'],
+                                                  shifts_opencv=defaultParams['shifts_opencv'],
+                                                  border_nan=defaultParams['border_nan'],
+                                                  highPassFilter=defaultParams['highPassFilter'],
+                                                  sigma=defaultParams['sigma'])
+                YC = YC.transpose((1, 2, 0))
+                outputFile = sys.argv[2] + '/' + file + '.motionCorrect.npz'
+                np.savez(outputFile, YC=YC)
+            except Exception as e:
+                print("Exception: ", e)
+
+    print("Motion correction done.")
 
 
 
